@@ -4,11 +4,10 @@ import { Usuario } from "../models/Usuario.js";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 
-
 dotenv.config();
 
 /* ============================================================
-   GOOGLE CLIENT (usa client_id y client_secret)
+   GOOGLE CLIENT
 ============================================================ */
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -91,18 +90,18 @@ export const login = async (req, res) => {
   }
 };
 
-/* LOGIN GOOGLE */
-import fetch from "node-fetch"; // si no la tienes
-
+/* ============================================================
+   LOGIN CON GOOGLE
+============================================================ */
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body; // token = code enviado desde frontend
+    const { token } = req.body;
 
     if (!token) {
       return res.status(400).json({ message: "Code no recibido" });
     }
 
-    // 1. Intercambiar el CODE por tokens
+    // 1. Intercambiar el CODE por tokens (fetch nativo de Node)
     const r = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -110,7 +109,7 @@ export const googleLogin = async (req, res) => {
         code: token,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: "postmessage", // IMPORTANTE
+        redirect_uri: "postmessage",
         grant_type: "authorization_code"
       })
     });
@@ -122,16 +121,15 @@ export const googleLogin = async (req, res) => {
       return res.status(400).json({ message: "Error token", error: tokens });
     }
 
-    const idToken = tokens.id_token; // <-- JWT REAL
+    const idToken = tokens.id_token;
 
-    // 2. Verificar el ID TOKEN
+    // 2. Verificar ID TOKEN
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID
     });
 
     const payload = ticket.getPayload();
-
     const email = payload.email;
     const nombre = payload.name;
     const foto = payload.picture;
@@ -168,7 +166,6 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
-
 
 /* ============================================================
    PERFIL
