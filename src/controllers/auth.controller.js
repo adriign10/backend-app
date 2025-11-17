@@ -3,11 +3,12 @@ import jwt from "jsonwebtoken";
 import { Usuario } from "../models/Usuario.js";
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
+import fetch from "node-fetch"; // si no la tienes
 
 dotenv.config();
 
 /* ============================================================
-   GOOGLE CLIENT
+   GOOGLE CLIENT (usa client_id y client_secret)
 ============================================================ */
 const googleClient = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -50,30 +51,43 @@ export const register = async (req, res) => {
    LOGIN NORMAL
 ============================================================ */
 export const login = async (req, res) => {
+  console.log("BODY recibido:", req.body);
   try {
     const { email, contrasena } = req.body;
 
+    // 1️⃣ Buscar usuario por email
     const usuario = await Usuario.findByEmail(email);
+console.log("Usuario encontrado:", usuario);
+
 
     if (!usuario) {
       return res.status(400).json({ message: "Email o contraseña incorrectos" });
     }
 
+    // 2️⃣ Validar si es usuario Google
     if (usuario.google === 1) {
       return res.status(400).json({ message: "Este usuario solo puede iniciar con Google" });
     }
 
+    // 3️⃣ Validar que tenga contraseña
+    if (!usuario.contrasena) {
+      return res.status(400).json({ message: "El usuario no tiene contraseña registrada" });
+    }
+
+    // 4️⃣ Comparar contraseña
     const match = await bcrypt.compare(contrasena, usuario.contrasena);
     if (!match) {
       return res.status(400).json({ message: "Email o contraseña incorrectos" });
     }
 
+    // 5️⃣ Crear JWT
     const token = jwt.sign(
       { id_usuario: usuario.id_usuario },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // 6️⃣ Responder con datos del usuario
     res.json({
       message: "Login exitoso",
       token,
@@ -85,23 +99,25 @@ export const login = async (req, res) => {
         google: usuario.google
       },
     });
+
   } catch (error) {
+    console.error("Error en login:", error); // 🔥 importante para ver detalles en consola
     res.status(500).json({ message: "Error en el login", error: error.message });
   }
 };
 
-/* ============================================================
-   LOGIN CON GOOGLE
-============================================================ */
+
+
+/* LOGIN GOOGLE */
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token } = req.body; // token = code enviado desde frontend
 
     if (!token) {
       return res.status(400).json({ message: "Code no recibido" });
     }
 
-    // 1. Intercambiar el CODE por tokens (fetch nativo de Node)
+    // 1. Intercambiar el CODE por tokens
     const r = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -109,7 +125,7 @@ export const googleLogin = async (req, res) => {
         code: token,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: "postmessage",
+        redirect_uri: "postmessage", // IMPORTANTE
         grant_type: "authorization_code"
       })
     });
@@ -121,15 +137,16 @@ export const googleLogin = async (req, res) => {
       return res.status(400).json({ message: "Error token", error: tokens });
     }
 
-    const idToken = tokens.id_token;
+    const idToken = tokens.id_token; // <-- JWT REAL
 
-    // 2. Verificar ID TOKEN
+    // 2. Verificar el ID TOKEN
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID
     });
 
     const payload = ticket.getPayload();
+
     const email = payload.email;
     const nombre = payload.name;
     const foto = payload.picture;
@@ -166,6 +183,7 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
+
 
 /* ============================================================
    PERFIL

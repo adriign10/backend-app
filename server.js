@@ -14,8 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ---- SERVIR FRONTEND IONIC ----
-// Apuntamos al build generado en ../frontend/www
-const frontendPath = path.join(__dirname, '../frontend/www');
+const frontendPath = path.join(__dirname, 'frontend/www'); // 👈 ruta correcta
 app.use(express.static(frontendPath));
 
 // Cualquier ruta que no sea /api/... devuelve index.html
