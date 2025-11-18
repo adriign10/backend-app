@@ -1,78 +1,63 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { Usuario } from "../models/Usuario.js";
-import dotenv from "dotenv";
-dotenv.config();
+import { db } from "../config/db.js";
+import cloudinary from "../config/cloudinary.js";
 
-export const register = async (req, res) => {
+export const actualizarPerfil = async (req, res) => {
   try {
-    const { nombre, email, contrasena, fotoPerfil } = req.body;
+    const id_usuario = req.user.id_usuario;
+    const { nombre, email } = req.body;
 
-    if (!nombre || !email || !contrasena) {
-      return res.status(400).json({ message: "Faltan datos obligatorios" });
-    }
+    console.log("📥 BODY recibido:", req.body);
+    console.log("📸 Archivo recibido:", req.file ? "Sí" : "No");
 
-    const existe = await Usuario.findByEmail(email);
-    if (existe) {
-      return res.status(400).json({ message: "El email ya está registrado" });
-    }
-
-    const hashedPassword = await bcrypt.hash(contrasena, 10);
-
-    const userId = await Usuario.create({
-      nombre,
-      email,
-      contrasena: hashedPassword,
-      fotoPerfil: fotoPerfil || null,
-    });
-
-    res.status(201).json({ message: "Usuario registrado", id: userId });
-  } catch (error) {
-    res.status(500).json({ message: "Error en el registro", error: error.message });
-  }
-};
-
-export const login = async (req, res) => {
-  try {
-    const { email, contrasena } = req.body;
-
-    const usuario = await Usuario.findByEmail(email);
-
-    if (!usuario) {
-      return res.status(400).json({ message: "Email o contraseña incorrectos" });
-    }
-
-    const match = await bcrypt.compare(contrasena, usuario.contrasena);
-    if (!match) {
-      return res.status(400).json({ message: "Email o contraseña incorrectos" });
-    }
-
-    const token = jwt.sign(
-      { id_usuario: usuario.id_usuario },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+    const [rows] = await db.query(
+      "SELECT * FROM usuarios WHERE id_usuario = ?",
+      [id_usuario]
     );
 
-    res.json({
-      message: "Login exitoso",
-      token,
-      usuario: {
-        id_usuario: usuario.id_usuario,
-        nombre: usuario.nombre,
-        email: usuario.email,
-        foto_perfil: usuario.foto_perfil,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Error en el login", error: error.message });
-  }
-};
+    if (rows.length === 0) {
+      return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
+    }
 
-export const profile = async (req, res) => {
-  try {
-    const usuario = await Usuario.findById(req.user.id_usuario);
-    res.json(usuario);
+    const usuarioActual = rows[0];
+    let nuevaFoto = usuarioActual.foto_perfil;
+
+    if (req.file) {
+      nuevaFoto = await new Promise((resolve, reject) => {
+        const upload = cloudinary.uploader.upload_stream(
+          { folder: "Perfiles" }, // ← corregido
+          (err, result) => {
+            if (err) return reject(err);
+            resolve(result.secure_url);
+          }
+        );
+        upload.end(req.file.buffer);
+      });
+    }
+
+    await db.query(
+      `UPDATE usuarios 
+       SET nombre = ?, email = ?, foto_perfil = ?
+       WHERE id_usuario = ?`,
+      [nombre, email, nuevaFoto, id_usuario]
+    );
+
+    const [nuevoUsuario] = await db.query(
+      "SELECT id_usuario, nombre, email, foto_perfil FROM usuarios WHERE id_usuario = ?",
+      [id_usuario]
+    );
+
+    return res.json({
+      ok: true,
+      msg: "Perfil actualizado",
+      usuario: nuevoUsuario[0],
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "Error obteniendo perfil" });
+    console.error("❌ ERROR actualizarPerfil:", error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error al actualizar perfil",
+      error: error.message,
+    });
   }
 };
