@@ -1,4 +1,3 @@
-// src/middlewares/multer.memory.js
 import multer from "multer";
 
 export const upload = multer({

@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes.js";
 import usuariosRoutes from "./routes/usuarios.routes.js";
 import recuerdosRoutes from './routes/recuerdos.routes.js';
 import ubicacionesRoutes from "./routes/ubicaciones.routes.js";
+import fotosRouter from "./routes/fotos.routes.js";
 
 const app = express();
 
@@ -25,5 +26,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/recuerdos", recuerdosRoutes);
 app.use("/api/ubicaciones", ubicacionesRoutes);
+app.use("/api/fotos", fotosRouter);
 
 export default app;
