@@ -102,3 +102,25 @@ export const updateRecuerdo = async (req, res) => {
     res.status(500).json({ msg: "Error actualizando recuerdo" });
   }
 };
+
+
+export const getRecuerdoById = async (req, res) => {
+  try {
+    const { id_recuerdo } = req.params;
+
+    const [rows] = await db.query(
+      "SELECT * FROM recuerdos WHERE id_recuerdo = ?",
+      [id_recuerdo]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Recuerdo no encontrado" });
+    }
+
+    res.json(rows[0]);
+
+  } catch (error) {
+    console.error("❌ ERROR getRecuerdoById:", error);
+    res.status(500).json({ message: "Error consultando recuerdo", error });
+  }
+};
