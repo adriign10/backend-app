@@ -59,4 +59,46 @@ export const getRecuerdosUsuario = async (req, res) => {
     res.status(500).json({ message: "Error al obtener recuerdos", error });
   }
 };
+export const updateRecuerdo = async (req, res) => {
+  try {
+    const { id_recuerdo } = req.params;
+    const { titulo, nota } = req.body;
 
+    let nuevaFotoUrl = null;
+
+    // Si se envió foto nueva → Cloudinary
+    if (req.file) {
+      nuevaFotoUrl = await new Promise((resolve, reject) => {
+        const upload = cloudinary.v2.uploader.upload_stream(
+          { folder: "recuerdos" },
+          (err, result) => {
+            if (err) return reject(err);
+            resolve(result.secure_url);
+          }
+        );
+        upload.end(req.file.buffer);
+      });
+    }
+
+    // Actualizar en MySQL
+    const query = nuevaFotoUrl
+      ? `UPDATE recuerdos SET titulo=?, nota=?, foto_representativa=? WHERE id_recuerdo=?`
+      : `UPDATE recuerdos SET titulo=?, nota=? WHERE id_recuerdo=?`;
+
+    const params = nuevaFotoUrl
+      ? [titulo, nota, nuevaFotoUrl, id_recuerdo]
+      : [titulo, nota, id_recuerdo];
+
+    await db.query(query, params);
+
+    res.json({
+      ok: true,
+      msg: "Recuerdo actualizado correctamente",
+      foto_representativa: nuevaFotoUrl
+    });
+
+  } catch (error) {
+    console.error("❌ ERROR updateRecuerdo:", error);
+    res.status(500).json({ msg: "Error actualizando recuerdo" });
+  }
+};
