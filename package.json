@@ -11,6 +11,8 @@
   "author": "Adriana González",
   "license": "ISC",
   "dependencies": {
+    "@agm/core": "^3.0.0-beta.0",
+    "@types/googlemaps": "^3.43.3",
     "bcryptjs": "^3.0.3",
     "body-parser": "^1.20.3",
     "cloudinary": "^2.8.0",
