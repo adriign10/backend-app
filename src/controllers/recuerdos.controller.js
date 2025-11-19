@@ -39,3 +39,24 @@ export const createRecuerdo = async (req, res) => {
     res.status(500).json({ message: "Error al crear recuerdo", error });
   }
 };
+
+export const getRecuerdosUsuario = async (req, res) => {
+  try {
+    const { creado_por } = req.query;
+
+    if (!creado_por) {
+      return res.status(400).json({ message: "Falta el parámetro creado_por" });
+    }
+
+    const [recuerdos] = await db.query(
+      "SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha_creacion DESC",
+      [creado_por]
+    );
+
+    res.json(recuerdos);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error al obtener recuerdos", error });
+  }
+};
+
