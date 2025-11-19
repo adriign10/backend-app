@@ -109,7 +109,14 @@ export const getRecuerdoById = async (req, res) => {
     const { id_recuerdo } = req.params;
 
     const [rows] = await db.query(
-      "SELECT * FROM recuerdos WHERE id_recuerdo = ?",
+      `SELECT r.*, 
+              u.nombre AS ubicacion_nombre,
+              u.descripcion AS ubicacion_descripcion,
+              u.latitud,
+              u.longitud
+       FROM recuerdos r
+       LEFT JOIN ubicaciones u ON r.id_ubicacion = u.id_ubicacion
+       WHERE r.id_recuerdo = ?`,
       [id_recuerdo]
     );
 
