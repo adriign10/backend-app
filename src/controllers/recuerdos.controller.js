@@ -1,5 +1,12 @@
 import { db } from "../config/db.js";
-import cloudinary from "../config/cloudinary.js"; // <-- usa tu config central
+import cloudinary from "cloudinary";
+
+// Configurar cloudinary
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const createRecuerdo = async (req, res) => {
   try {
@@ -7,12 +14,11 @@ export const createRecuerdo = async (req, res) => {
 
     let fotoUrl = null;
 
-    // Si viene archivo en form-data
-    if (req.files?.foto_representativa) {
-      const resultado = await cloudinary.uploader.upload(
-        req.files.foto_representativa.tempFilePath,
-        { folder: "Recuerdos" }
-      );
+    // Si viene una imagen en base64 la subimos a Cloudinary
+    if (req.body.foto_base64) {
+      const resultado = await cloudinary.v2.uploader.upload(req.body.foto_base64, {
+        folder: "recuerdos",
+      });
       fotoUrl = resultado.secure_url;
     }
 
