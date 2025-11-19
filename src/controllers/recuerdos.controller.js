@@ -103,28 +103,20 @@ export const updateRecuerdo = async (req, res) => {
   }
 };
 
+
 export const getRecuerdoById = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
 
     const [rows] = await db.query(
       `SELECT 
-          r.id_recuerdo,
-          r.titulo,
-          r.nota,
-          r.foto_representativa,
-          r.id_ubicacion,
-
-          u.nombre AS ubicacion_nombre,
-          u.descripcion AS ubicacion_descripcion,
-          u.latitud,
-          u.longitud
-
-       FROM recuerdos r
-       LEFT JOIN ubicaciones u 
-            ON r.id_ubicacion = u.id_ubicacion
-       WHERE r.id_recuerdo = ?
-       LIMIT 1`,
+        r.*,
+        u.nombre AS nombre_ubicacion,
+        u.latitud AS ubic_latitud,
+        u.longitud AS ubic_longitud
+      FROM recuerdos r
+      LEFT JOIN ubicaciones u ON r.id_ubicacion = u.id_ubicacion
+      WHERE r.id_recuerdo = ?`,
       [id_recuerdo]
     );
 
@@ -136,6 +128,6 @@ export const getRecuerdoById = async (req, res) => {
 
   } catch (error) {
     console.error("❌ ERROR getRecuerdoById:", error);
-    res.status(500).json({ message: "Error consultando recuerdo", error: error.message });
+    res.status(500).json({ message: "Error consultando recuerdo", error });
   }
 };
