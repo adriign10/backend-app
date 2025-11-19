@@ -1,12 +1,5 @@
 import { db } from "../config/db.js";
-import cloudinary from "cloudinary";
-
-// Configurar cloudinary
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import cloudinary from "../config/cloudinary.js";
 
 export const createRecuerdo = async (req, res) => {
   try {
@@ -16,8 +9,8 @@ export const createRecuerdo = async (req, res) => {
 
     // Si viene una imagen en base64 la subimos a Cloudinary
     if (req.body.foto_base64) {
-      const resultado = await cloudinary.v2.uploader.upload(req.body.foto_base64, {
-        folder: "recuerdos",
+      const resultado = await cloudinary.uploader.upload(req.body.foto_base64, {
+        folder: "Recuerdos",
       });
       fotoUrl = resultado.secure_url;
     }
@@ -54,6 +47,7 @@ export const getRecuerdosUsuario = async (req, res) => {
     );
 
     res.json(recuerdos);
+    
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error al obtener recuerdos", error });
@@ -69,8 +63,8 @@ export const updateRecuerdo = async (req, res) => {
     // Si se envió foto nueva → Cloudinary
     if (req.file) {
       nuevaFotoUrl = await new Promise((resolve, reject) => {
-        const upload = cloudinary.v2.uploader.upload_stream(
-          { folder: "recuerdos" },
+        const upload = cloudinary.uploader.upload_stream(
+          { folder: "Recuerdos" },
           (err, result) => {
             if (err) return reject(err);
             resolve(result.secure_url);
