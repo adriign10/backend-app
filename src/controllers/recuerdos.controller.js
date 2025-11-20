@@ -125,3 +125,46 @@ export const getRecuerdoById = async (req, res) => {
     res.status(500).json({ message: "Error consultando recuerdo", error });
   }
 };
+
+// Agregar amigos a un recuerdo
+export const agregarAmigosRecuerdo = async (req, res) => {
+  try {
+    const { id_recuerdo } = req.params;
+    const { amigos } = req.body; // Array de ids de usuarios
+
+    if (!Array.isArray(amigos) || amigos.length === 0) {
+      return res.status(400).json({ message: "No se enviaron amigos" });
+    }
+
+    // Limpiar relaciones existentes antes de insertar nuevas
+    await db.query(`DELETE FROM recuerdos_menciones WHERE id_recuerdo = ?`, [id_recuerdo]);
+
+    // Insertar nuevos amigos
+    const values = amigos.map(id_usuario => [id_recuerdo, id_usuario]);
+    await db.query(`INSERT INTO recuerdos_menciones (id_recuerdo, id_usuario) VALUES ?`, [values]);
+
+    res.json({ ok: true, message: "Amigos agregados al recuerdo correctamente" });
+
+  } catch (error) {
+    console.error("❌ ERROR agregarAmigosRecuerdo:", error);
+    res.status(500).json({ message: "Error al agregar amigos al recuerdo", error });
+  }
+};
+
+// Obtener amigos mencionados en un recuerdo
+export const obtenerAmigosRecuerdo = async (req, res) => {
+  try {
+    const { id_recuerdo } = req.params;
+    const [rows] = await db.query(
+      `SELECT u.id_usuario, u.nombre, u.foto_perfil 
+       FROM recuerdos_menciones rm
+       JOIN usuarios u ON rm.id_usuario = u.id_usuario
+       WHERE rm.id_recuerdo = ?`,
+      [id_recuerdo]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("❌ ERROR obtenerAmigosRecuerdo:", error);
+    res.status(500).json({ message: "Error al obtener amigos del recuerdo", error });
+  }
+};
