@@ -1,6 +1,5 @@
 // controllers/comentarios.controller.js
 import { db } from "../config/db.js";
-import { notificarComentario } from "./notificaciones.controller.js";
 
 export const agregarComentario = async (req, res) => {
   try {
