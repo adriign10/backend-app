@@ -144,12 +144,13 @@ export const agregarAmigosRecuerdo = async (req, res) => {
       return res.status(400).json({ message: "No hay amigos seleccionados" });
     }
 
-    // 🔹 Insertar amigos en la tabla de relación recuerdo-amigos
-    const amigosData = amigos.map(id_usuario => [id_recuerdo, id_usuario]);
-    await db.query(
-      `INSERT INTO recuerdos_amigos (id_recuerdo, id_usuario) VALUES ?`,
-      [amigosData]
-    );
+// 🔹 Insertar amigos en la tabla de relación recuerdo-amigos, ignorando duplicados
+const amigosData = amigos.map(id_usuario => [id_recuerdo, id_usuario]);
+await db.query(
+  `INSERT IGNORE INTO recuerdos_amigos (id_recuerdo, id_usuario) VALUES ?`,
+  [amigosData]
+);
+
 
     // 🔹 Obtener título del recuerdo
     const [recuerdoRows] = await db.query(
@@ -227,18 +228,20 @@ export const getRecuerdosVisibles = async (req, res) => {
     const [recuerdos] = await db.query(
       `SELECT r.* 
        FROM recuerdos r
+       LEFT JOIN recuerdos_amigos ra ON r.id_recuerdo = ra.id_recuerdo
        LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
        WHERE r.privacidad='publico'
           OR r.creado_por=?
+          OR ra.id_usuario=?
           OR rm.id_usuario=? 
        GROUP BY r.id_recuerdo
-       ORDER BY r.fecha DESC`,
-      [id_usuario, id_usuario]
+       ORDER BY r.fecha_evento DESC`,
+      [id_usuario, id_usuario, id_usuario]
     );
 
     res.json(recuerdos);
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error obteniendo recuerdos visibles:", error);
     res.status(500).json({ message: "Error obteniendo recuerdos visibles", error });
   }
 };
