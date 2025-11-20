@@ -7,6 +7,7 @@ import usuariosRoutes from "./routes/usuarios.routes.js";
 import recuerdosRoutes from './routes/recuerdos.routes.js';
 import ubicacionesRoutes from "./routes/ubicaciones.routes.js";
 import fotosRouter from "./routes/fotos.routes.js";
+import notificacionesRoutes from './routes/notificaciones.routes.js';
 
 const app = express();
 
@@ -27,5 +28,6 @@ app.use("/api/usuarios", usuariosRoutes);
 app.use("/api/recuerdos", recuerdosRoutes);
 app.use("/api/ubicaciones", ubicacionesRoutes);
 app.use("/api/fotos", fotosRouter);
+app.use('/api/notificaciones', notificacionesRoutes);
 
 export default app;
