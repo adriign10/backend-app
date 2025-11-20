@@ -22,7 +22,7 @@ export const agregarFotosRecuerdo = async (id_recuerdo, fotos) => {
 
 export const obtenerRecuerdosUsuario = async (id_usuario) => {
   const [recuerdos] = await db.query(
-    `SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha_creacion DESC`,
+    `SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha DESC`,
     [id_usuario]
   );
   return recuerdos;

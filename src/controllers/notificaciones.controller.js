@@ -32,21 +32,20 @@ export const getNotificacionesUsuario = async (req, res) => {
     const { id_usuario } = req.params;
 
     const [rows] = await db.query(
-      `SELECT n.*, u.nombre AS quien_menciono_nombre, u.foto_perfil AS quien_menciono_foto
-       FROM notificaciones n
-       LEFT JOIN usuarios u ON n.id_quien_menciono = u.id_usuario
-       WHERE n.id_usuario = ?
-       ORDER BY n.id DESC`,
+      `SELECT id_notificacion, id_usuario, mensaje, link, leido, fecha
+       FROM notificaciones
+       WHERE id_usuario = ?
+       ORDER BY id_notificacion DESC`,
       [id_usuario]
     );
 
     res.json(rows);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error al obtener notificaciones" });
   }
 };
+
 
 // Marcar notificación como leída
 // controllers/notificaciones.controller.js

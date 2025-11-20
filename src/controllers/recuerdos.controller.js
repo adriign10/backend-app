@@ -42,7 +42,7 @@ export const getRecuerdosUsuario = async (req, res) => {
     }
 
     const [recuerdos] = await db.query(
-      "SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha_creacion DESC",
+      "SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha DESC",
       [creado_por]
     );
 
@@ -229,7 +229,7 @@ export const getRecuerdosVisibles = async (req, res) => {
           OR r.creado_por=?
           OR rm.id_usuario=? 
        GROUP BY r.id_recuerdo
-       ORDER BY r.fecha_creacion DESC`,
+       ORDER BY r.fecha DESC`,
       [id_usuario, id_usuario]
     );
 
