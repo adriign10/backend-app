@@ -140,6 +140,10 @@ export const agregarAmigosRecuerdo = async (req, res) => {
     const { id_recuerdo } = req.params;
     const { amigos, creado_por, creado_por_nombre } = req.body; // IDs de amigos y creador
 
+        console.log("💡 ID del recuerdo:", id_recuerdo);
+    console.log("💡 Amigos a agregar:", amigos);
+    console.log("💡 Creado por:", creado_por);
+    
     if (!Array.isArray(amigos) || amigos.length === 0) {
       return res.status(400).json({ message: "No hay amigos seleccionados" });
     }

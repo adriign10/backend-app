@@ -77,19 +77,36 @@ export const marcarLeida = async (req, res) => {
  * @param {string} tituloRecuerdo
  * @param {number} idQuienMenciono
  */
+
+
 export const notificarMencionesRecuerdo = async (id_recuerdo, amigos, tituloRecuerdo, idQuienMenciono) => {
-  if (!Array.isArray(amigos) || amigos.length === 0) return;
+  try {
+    console.log("💡 notificarMencionesRecuerdo");
+    console.log("ID Recuerdo:", id_recuerdo);
+    console.log("Amigos a notificar:", amigos);
+    console.log("Título del recuerdo:", tituloRecuerdo);
+    console.log("ID quien mencionó:", idQuienMenciono);
 
-  const notificaciones = amigos.map(id_usuario => [
-    id_usuario,
-    `Has sido mencionado en el recuerdo "${tituloRecuerdo}"`,
-    `/recuerdo/${id_recuerdo}`,
-    0,
-    idQuienMenciono
-  ]);
+    if (!Array.isArray(amigos) || amigos.length === 0) return;
 
-  await db.query(
-    `INSERT INTO notificaciones (id_usuario, mensaje, link, leido, id_quien_menciono) VALUES ?`,
-    [notificaciones]
-  );
+    const notificaciones = amigos.map(id_usuario => [
+      id_usuario,
+      `Has sido mencionado en el recuerdo "${tituloRecuerdo}"`,
+      `/recuerdo/${id_recuerdo}`,
+      0,
+      idQuienMenciono
+    ]);
+
+    console.log("Notificaciones a insertar:", notificaciones);
+
+    const [result] = await db.query(
+      `INSERT INTO notificaciones (id_usuario, mensaje, link, leido, id_quien_menciono) VALUES ?`,
+      [notificaciones]
+    );
+
+    console.log("Notificaciones insertadas:", result);
+
+  } catch (error) {
+    console.error("❌ Error en notificarMencionesRecuerdo:", error);
+  }
 };
