@@ -1,6 +1,9 @@
 import { db } from '../config/db.js';
 
-// Crear notificación
+/**
+ * Crear notificación manual
+ */
+// notificaciones.controller.js
 export const crearNotificacion = async (req, res) => {
   try {
     const { id_usuario, mensaje, link, id_quien_menciono } = req.body;
@@ -26,7 +29,9 @@ export const crearNotificacion = async (req, res) => {
   }
 };
 
-// Obtener notificaciones de un usuario
+/**
+ * Obtener notificaciones de un usuario
+ */
 export const getNotificacionesUsuario = async (req, res) => {
   try {
     const { id_usuario } = req.params;
@@ -46,15 +51,15 @@ export const getNotificacionesUsuario = async (req, res) => {
   }
 };
 
-
-// Marcar notificación como leída
-// controllers/notificaciones.controller.js
+/**
+ * Marcar notificación como leída
+ */
 export const marcarLeida = async (req, res) => {
   try {
     const { id_notificacion } = req.params;
 
     await db.query(
-      `UPDATE notificaciones SET leido = 1 WHERE id = ?`,
+      `UPDATE notificaciones SET leido = 1 WHERE id_notificacion = ?`,
       [id_notificacion]
     );
 
@@ -65,9 +70,13 @@ export const marcarLeida = async (req, res) => {
   }
 };
 
-
-
-// Enviar notificaciones al mencionar amigos en un recuerdo
+/**
+ * Notificar a amigos mencionados en un recuerdo
+ * @param {number} id_recuerdo
+ * @param {number[]} amigos
+ * @param {string} tituloRecuerdo
+ * @param {number} idQuienMenciono
+ */
 export const notificarMencionesRecuerdo = async (id_recuerdo, amigos, tituloRecuerdo, idQuienMenciono) => {
   if (!Array.isArray(amigos) || amigos.length === 0) return;
 
@@ -84,4 +93,3 @@ export const notificarMencionesRecuerdo = async (id_recuerdo, amigos, tituloRecu
     [notificaciones]
   );
 };
-

@@ -1,5 +1,6 @@
 import { db } from "../config/db.js";
 import cloudinary from "../config/cloudinary.js";
+import { notificarMencionesRecuerdo } from './notificaciones.controller.js';
 
 export const createRecuerdo = async (req, res) => {
   try {
@@ -137,38 +138,33 @@ export const getRecuerdoById = async (req, res) => {
 export const agregarAmigosRecuerdo = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
-    const { amigos } = req.body; // Array de IDs
+    const { amigos, creado_por, creado_por_nombre } = req.body; // IDs de amigos y creador
 
     if (!Array.isArray(amigos) || amigos.length === 0) {
       return res.status(400).json({ message: "No hay amigos seleccionados" });
     }
 
-for (const id_usuario of amigos) {
-  await db.query(
-    `INSERT INTO notificaciones (id_usuario, mensaje, link, leido, id_quien_menciono) VALUES (?, ?, ?, 0, ?)`,
-    [
-      id_usuario, 
-      `Has sido mencionado en el recuerdo "${recuerdo[0].titulo}" por ${req.body.creado_por_nombre}`, 
-      `/detalles-recuerdo/${id_recuerdo}`, // link directo al recuerdo
-      req.body.creado_por // id de quien mencionó
-    ]
-  );
+    // 🔹 Insertar amigos en la tabla de relación recuerdo-amigos
+    const amigosData = amigos.map(id_usuario => [id_recuerdo, id_usuario]);
+    await db.query(
+      `INSERT INTO recuerdos_amigos (id_recuerdo, id_usuario) VALUES ?`,
+      [amigosData]
+    );
 
-}
-
-
-    // 🔹 Crear notificaciones para cada amigo
-    const [recuerdo] = await db.query(
-      `SELECT titulo, creado_por FROM recuerdos WHERE id_recuerdo = ?`,
+    // 🔹 Obtener título del recuerdo
+    const [recuerdoRows] = await db.query(
+      `SELECT titulo FROM recuerdos WHERE id_recuerdo = ?`,
       [id_recuerdo]
     );
 
-    const mensaje = `Has sido mencionado en el recuerdo "${recuerdo[0].titulo}"`;
-    const notificaciones = amigos.map(id_usuario => [id_usuario, mensaje, 0]);
-    await db.query(
-      `INSERT INTO notificaciones (id_usuario, mensaje, leido) VALUES ?`,
-      [notificaciones]
-    );
+    if (recuerdoRows.length === 0) {
+      return res.status(404).json({ message: "Recuerdo no encontrado" });
+    }
+
+    const tituloRecuerdo = recuerdoRows[0].titulo;
+
+    // 🔹 Crear notificaciones para todos los amigos mencionados
+    await notificarMencionesRecuerdo(id_recuerdo, amigos, tituloRecuerdo, creado_por);
 
     res.json({ message: "Amigos agregados y notificaciones enviadas correctamente" });
 
@@ -183,9 +179,9 @@ export const obtenerAmigosRecuerdo = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT u.id_usuario, u.nombre, u.foto_perfil
-       FROM recuerdos_menciones rm
-       JOIN usuarios u ON u.id_usuario = rm.id_usuario
-       WHERE rm.id_recuerdo = ?`,
+       FROM recuerdos_amigos ra
+       JOIN usuarios u ON u.id_usuario = ra.id_usuario
+       WHERE ra.id_recuerdo = ?`,
       [id_recuerdo]
     );
     res.json(rows);
@@ -197,7 +193,7 @@ export const obtenerAmigosRecuerdo = async (req, res) => {
 
 
 // GET /usuarios/buscar?term=xxx&id_usuario=1
-export const buscarUsuarios = async (req, res) => {
+export const buscarUsuariosNoAmigos  = async (req, res) => {
   try {
     const { term, id_usuario } = req.query;
     const busqueda = `%${term}%`;
@@ -247,22 +243,4 @@ export const getRecuerdosVisibles = async (req, res) => {
   }
 };
 
-export const crearNotificacion = async (req, res) => {
-  try {
-    const { id_usuario, mensaje, link } = req.body;
 
-    if (!id_usuario || !mensaje) {
-      return res.status(400).json({ message: "Faltan datos obligatorios" });
-    }
-
-    await db.query(
-      `INSERT INTO notificaciones (id_usuario, mensaje, link, leido) VALUES (?, ?, ?, 0)`,
-      [id_usuario, mensaje, link || null]
-    );
-
-    res.json({ message: "Notificación creada correctamente" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error creando notificación", error });
-  }
-};
