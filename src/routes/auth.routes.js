@@ -6,7 +6,7 @@ const router = Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.post("/google", googleLogin);
+router.post("/google", googleLogin); // <-- ruta para login Google
 router.get("/profile", verifyToken, profile);
 
 export default router;

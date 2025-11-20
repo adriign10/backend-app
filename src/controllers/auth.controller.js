@@ -108,40 +108,31 @@ console.log("Usuario encontrado:", usuario);
 
 
 
-/* LOGIN GOOGLE */
+/* ============================================================
+   PERFIL
+============================================================ */
+export const profile = async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.user.id_usuario);
+    res.json(usuario);
+  } catch (error) {
+    res.status(500).json({ message: "Error obteniendo perfil" });
+  }
+};
+
+
+///GOOGLE
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body; // token = code enviado desde frontend
+    const { token } = req.body; // token enviado desde frontend
 
     if (!token) {
-      return res.status(400).json({ message: "Code no recibido" });
+      return res.status(400).json({ message: "Token no recibido" });
     }
 
-    // 1. Intercambiar el CODE por tokens
-    const r = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code: token,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: "postmessage", // IMPORTANTE
-        grant_type: "authorization_code"
-      })
-    });
-
-    const tokens = await r.json();
-    console.log("TOKENS:", tokens);
-
-    if (tokens.error) {
-      return res.status(400).json({ message: "Error token", error: tokens });
-    }
-
-    const idToken = tokens.id_token; // <-- JWT REAL
-
-    // 2. Verificar el ID TOKEN
+    // 1️⃣ Verificar ID token con Google
     const ticket = await googleClient.verifyIdToken({
-      idToken,
+      idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID
     });
 
@@ -149,21 +140,24 @@ export const googleLogin = async (req, res) => {
 
     const email = payload.email;
     const nombre = payload.name;
-    const foto = payload.picture;
 
+    // 2️⃣ Buscar usuario en BD
     let usuario = await Usuario.findByEmail(email);
 
+    // 3️⃣ Si no existe, crear usuario nuevo
     if (!usuario) {
       const id = await Usuario.create({
         nombre,
         email,
-        contrasena: null,
-        fotoPerfil: foto,
+        contrasena: null, // no tiene contraseña
+        foto_perfil: null, // se puede actualizar luego
+        estado: 1,
         google: 1
       });
       usuario = await Usuario.findById(id);
     }
 
+    // 4️⃣ Crear JWT
     const tokenJwt = jwt.sign(
       { id_usuario: usuario.id_usuario },
       process.env.JWT_SECRET,
@@ -177,22 +171,10 @@ export const googleLogin = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Error Google Login:", error);
     res.status(400).json({
       message: "Error con Google Login",
       error: error.message
     });
-  }
-};
-
-
-/* ============================================================
-   PERFIL
-============================================================ */
-export const profile = async (req, res) => {
-  try {
-    const usuario = await Usuario.findById(req.user.id_usuario);
-    res.json(usuario);
-  } catch (error) {
-    res.status(500).json({ message: "Error obteniendo perfil" });
   }
 };
