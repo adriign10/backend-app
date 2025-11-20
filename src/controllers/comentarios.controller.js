@@ -1,6 +1,28 @@
 // controllers/comentarios.controller.js
 import { db } from "../config/db.js";
 
+/**
+ * Notifica al propietario de un recuerdo cuando alguien comenta
+ */
+export const notificarComentario = async (id_usuario, id_quien_comento, id_recuerdo, texto) => {
+  try {
+    const mensaje = `Alguien comentó en tu recuerdo: "${texto}"`;
+    const link = `/recuerdo/${id_recuerdo}`;
+
+    await db.query(
+      `INSERT INTO notificaciones (id_usuario, mensaje, link, leido, id_quien_menciono)
+       VALUES (?, ?, ?, 0, ?)`,
+      [id_usuario, mensaje, link, id_quien_comento]
+    );
+  } catch (error) {
+    console.error("❌ ERROR notificarComentario:", error);
+    throw error;
+  }
+};
+
+/**
+ * Agrega un comentario a un recuerdo
+ */
 export const agregarComentario = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
@@ -10,24 +32,28 @@ export const agregarComentario = async (req, res) => {
       return res.status(400).json({ message: "El comentario no puede estar vacío" });
     }
 
- // INSERTAR comentario
-const [result] = await db.query(
-  `INSERT INTO comentarios (id_recuerdo, id_usuario, texto) VALUES (?, ?, ?)`,
-  [id_recuerdo, id_usuario, texto]
-);
+    // INSERTAR comentario
+    const [result] = await db.query(
+      `INSERT INTO comentarios (id_recuerdo, id_usuario, texto) VALUES (?, ?, ?)`,
+      [id_recuerdo, id_usuario, texto]
+    );
 
-// Obtener propietario del recuerdo
-const [recuerdoRows] = await db.query(
-  `SELECT creado_por FROM recuerdos WHERE id_recuerdo = ?`,
-  [id_recuerdo]
-);
+    // Obtener propietario del recuerdo
+    const [recuerdoRows] = await db.query(
+      `SELECT creado_por FROM recuerdos WHERE id_recuerdo = ?`,
+      [id_recuerdo]
+    );
 
-if (recuerdoRows.length > 0) {
-  const creadorId = recuerdoRows[0].creado_por;
-  if (creadorId !== id_usuario) {
-    await notificarComentario(creadorId, id_usuario, id_recuerdo, texto);
-  }
-}
+    if (recuerdoRows.length > 0) {
+      const creadorId = recuerdoRows[0].creado_por;
+      if (creadorId !== id_usuario) {
+        try {
+          await notificarComentario(creadorId, id_usuario, id_recuerdo, texto);
+        } catch (err) {
+          console.error("No se pudo notificar al propietario:", err);
+        }
+      }
+    }
 
     res.status(201).json({ message: "Comentario agregado", id_comentario: result.insertId });
 
@@ -37,6 +63,9 @@ if (recuerdoRows.length > 0) {
   }
 };
 
+/**
+ * Obtiene todos los comentarios de un recuerdo
+ */
 export const obtenerComentarios = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
