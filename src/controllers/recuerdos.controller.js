@@ -37,21 +37,21 @@ export const createRecuerdo = async (req, res) => {
 export const getRecuerdosUsuario = async (req, res) => {
   try {
     const creado_por = req.query.creado_por;
-    console.log("Query params:", req.query);
-
     if (!creado_por) {
       return res.status(400).json({ message: "Falta id de usuario" });
     }
 
     const [rows] = await db.query(
-      `SELECT id_recuerdo, titulo, nota, fecha_evento, id_ubicacion, foto_representativa, creado_por, privacidad, fecha_creacion
-       FROM recuerdos
-       WHERE creado_por = ?
-       ORDER BY fecha_evento DESC`,
+      `SELECT r.id_recuerdo, r.titulo, r.nota, r.fecha_evento, r.foto_representativa,
+              GROUP_CONCAT(u.email) AS emails_mencionados
+       FROM recuerdos r
+       LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
+       LEFT JOIN usuarios u ON u.id_usuario = rm.id_usuario
+       WHERE r.creado_por = ?
+       GROUP BY r.id_recuerdo
+       ORDER BY r.fecha_evento DESC`,
       [creado_por]
     );
-
-    console.log("Recuerdos encontrados:", rows);
 
     res.json(rows);
   } catch (error) {
@@ -258,13 +258,15 @@ export const buscarRecuerdosAvanzado = async (req, res) => {
     if (!id_usuario) return res.status(400).json({ message: "Falta id_usuario" });
 
     let query = `
-      SELECT DISTINCT r.* 
+      SELECT DISTINCT r.id_recuerdo, r.titulo, r.nota, r.fecha_evento, r.foto_representativa,
+             u.email AS email_creador
       FROM recuerdos r
+      LEFT JOIN usuarios u ON u.id_usuario = r.creado_por
       LEFT JOIN recuerdos_amigos ra ON r.id_recuerdo = ra.id_recuerdo
-      WHERE (r.privacidad='publico' OR r.creado_por=? OR ra.id_usuario=?)
+      LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
+      WHERE r.creado_por = ?  -- solo recuerdos del usuario logueado
     `;
-
-    const params = [id_usuario, id_usuario];
+    const params = [id_usuario];
 
     if (titulo) {
       query += ` AND r.titulo LIKE ?`;
@@ -292,8 +294,8 @@ export const buscarRecuerdosAvanzado = async (req, res) => {
     }
 
     if (id_amigo) {
-      query += ` AND ra.id_usuario = ?`;
-      params.push(id_amigo);
+      query += ` AND (ra.id_usuario = ? OR rm.id_usuario = ?)`; // si quieres filtrar por amigo mencionado
+      params.push(id_amigo, id_amigo);
     }
 
     query += ` ORDER BY r.fecha_evento DESC`;
