@@ -11,14 +11,14 @@ router.post("/:id_recuerdo/amigos", agregarAmigosRecuerdo);
 
 router.get("/:id_recuerdo/amigos", obtenerAmigosRecuerdo);
 
+// Búsqueda avanzada
+router.get('/buscar-avanzado', buscarRecuerdosAvanzado);
+
 // NUEVO — editar colección
 router.put("/:id_recuerdo", upload.single("foto"), updateRecuerdo);
 router.get("/:id_recuerdo", getRecuerdoById);
 
 router.get('/', getRecuerdosUsuario);
-
-// Búsqueda avanzada
-router.get('/buscar-avanzado', buscarRecuerdosAvanzado);
 
 
 export default router;
