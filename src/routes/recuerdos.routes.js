@@ -18,7 +18,7 @@ router.get("/:id_recuerdo", getRecuerdoById);
 router.get('/', getRecuerdosUsuario);
 
 // Búsqueda avanzada
-router.get('/buscar/avanzado', buscarRecuerdosAvanzado);
+router.get('/buscar-avanzado', buscarRecuerdosAvanzado);
 
 
 export default router;
