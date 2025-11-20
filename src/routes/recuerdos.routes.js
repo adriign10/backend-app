@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getRecuerdosUsuario ,obtenerAmigosRecuerdo, createRecuerdo, updateRecuerdo, getRecuerdoById, agregarAmigosRecuerdo  } from "../controllers/recuerdos.controller.js";
+import { buscarRecuerdosAvanzado, getRecuerdosUsuario ,obtenerAmigosRecuerdo, createRecuerdo, updateRecuerdo, getRecuerdoById, agregarAmigosRecuerdo  } from "../controllers/recuerdos.controller.js";
 import multer from "multer";
 
 const router = Router();
@@ -16,6 +16,9 @@ router.put("/:id_recuerdo", upload.single("foto"), updateRecuerdo);
 router.get("/:id_recuerdo", getRecuerdoById);
 
 router.get('/', getRecuerdosUsuario);
+
+// Búsqueda avanzada
+router.get('/buscar/avanzado', buscarRecuerdosAvanzado);
 
 
 export default router;

@@ -251,3 +251,59 @@ export const getRecuerdosVisibles = async (req, res) => {
 };
 
 
+export const buscarRecuerdosAvanzado = async (req, res) => {
+  try {
+    const { id_usuario, titulo, nota, id_ubicacion, fecha_inicio, fecha_fin, id_amigo } = req.query;
+
+    if (!id_usuario) return res.status(400).json({ message: "Falta id_usuario" });
+
+    let query = `
+      SELECT DISTINCT r.* 
+      FROM recuerdos r
+      LEFT JOIN recuerdos_amigos ra ON r.id_recuerdo = ra.id_recuerdo
+      WHERE (r.privacidad='publico' OR r.creado_por=? OR ra.id_usuario=?)
+    `;
+
+    const params = [id_usuario, id_usuario];
+
+    if (titulo) {
+      query += ` AND r.titulo LIKE ?`;
+      params.push(`%${titulo}%`);
+    }
+
+    if (nota) {
+      query += ` AND r.nota LIKE ?`;
+      params.push(`%${nota}%`);
+    }
+
+    if (id_ubicacion) {
+      query += ` AND r.id_ubicacion = ?`;
+      params.push(id_ubicacion);
+    }
+
+    if (fecha_inicio) {
+      query += ` AND r.fecha_evento >= ?`;
+      params.push(fecha_inicio);
+    }
+
+    if (fecha_fin) {
+      query += ` AND r.fecha_evento <= ?`;
+      params.push(fecha_fin);
+    }
+
+    if (id_amigo) {
+      query += ` AND ra.id_usuario = ?`;
+      params.push(id_amigo);
+    }
+
+    query += ` ORDER BY r.fecha_evento DESC`;
+
+    const [rows] = await db.query(query, params);
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error("❌ Error buscarRecuerdosAvanzado:", error);
+    res.status(500).json({ message: "Error buscando recuerdos", error });
+  }
+};
