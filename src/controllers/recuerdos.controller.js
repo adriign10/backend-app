@@ -126,45 +126,75 @@ export const getRecuerdoById = async (req, res) => {
   }
 };
 
-// Agregar amigos a un recuerdo
+
+// amigos = [1,2,3] → IDs de los amigos seleccionados
 export const agregarAmigosRecuerdo = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
-    const { amigos } = req.body; // Array de ids de usuarios
+    const { amigos } = req.body; // Array de IDs
 
     if (!Array.isArray(amigos) || amigos.length === 0) {
-      return res.status(400).json({ message: "No se enviaron amigos" });
+      return res.status(400).json({ message: "No hay amigos seleccionados" });
     }
 
-    // Limpiar relaciones existentes antes de insertar nuevas
-    await db.query(`DELETE FROM recuerdos_menciones WHERE id_recuerdo = ?`, [id_recuerdo]);
-
-    // Insertar nuevos amigos
+    // Insertar en la tabla recuerdos_menciones
     const values = amigos.map(id_usuario => [id_recuerdo, id_usuario]);
-    await db.query(`INSERT INTO recuerdos_menciones (id_recuerdo, id_usuario) VALUES ?`, [values]);
+    await db.query(
+      `INSERT INTO recuerdos_menciones (id_recuerdo, id_usuario) VALUES ?`,
+      [values]
+    );
 
-    res.json({ ok: true, message: "Amigos agregados al recuerdo correctamente" });
+    res.json({ message: "Amigos agregados correctamente" });
 
   } catch (error) {
     console.error("❌ ERROR agregarAmigosRecuerdo:", error);
-    res.status(500).json({ message: "Error al agregar amigos al recuerdo", error });
+    res.status(500).json({ message: "Error agregando amigos", error });
   }
 };
 
-// Obtener amigos mencionados en un recuerdo
+
+
 export const obtenerAmigosRecuerdo = async (req, res) => {
+  const { id_recuerdo } = req.params;
   try {
-    const { id_recuerdo } = req.params;
     const [rows] = await db.query(
-      `SELECT u.id_usuario, u.nombre, u.foto_perfil 
+      `SELECT u.id_usuario, u.nombre, u.foto_perfil
        FROM recuerdos_menciones rm
-       JOIN usuarios u ON rm.id_usuario = u.id_usuario
+       JOIN usuarios u ON u.id_usuario = rm.id_usuario
        WHERE rm.id_recuerdo = ?`,
       [id_recuerdo]
     );
     res.json(rows);
   } catch (error) {
-    console.error("❌ ERROR obtenerAmigosRecuerdo:", error);
-    res.status(500).json({ message: "Error al obtener amigos del recuerdo", error });
+    console.error(error);
+    res.status(500).json({ message: "Error obteniendo amigos del recuerdo", error });
+  }
+};
+
+
+// GET /usuarios/buscar?term=xxx&id_usuario=1
+export const buscarUsuarios = async (req, res) => {
+  try {
+    const { term, id_usuario } = req.query;
+    const busqueda = `%${term}%`;
+
+    const [rows] = await db.query(
+      `SELECT id_usuario, nombre, email, foto_perfil
+       FROM usuarios
+       WHERE (nombre LIKE ? OR email LIKE ?)
+         AND id_usuario != ?
+         AND id_usuario NOT IN (
+           SELECT id_amigo 
+           FROM amistades 
+           WHERE id_usuario = ? AND estado='aceptado'
+         )`,
+      [busqueda, busqueda, id_usuario, id_usuario]
+    );
+
+    res.json(rows);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error buscando usuarios", error });
   }
 };

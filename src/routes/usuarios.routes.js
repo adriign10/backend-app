@@ -2,6 +2,7 @@ import { Router } from "express";
 import { actualizarPerfil } from "../controllers/usuarios.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 import multer from "multer";
+import { buscarUsuarios, enviarSolicitudAmistad, responderSolicitudAmistad, obtenerSolicitudesAmistad, obtenerAmigos } from "../controllers/usuarios.controller.js";
 
 const router = Router();
 const upload = multer();
@@ -13,4 +14,17 @@ router.put(
   actualizarPerfil
 );
 
+router.get("/buscar", verifyToken, buscarUsuarios);
+
+// Obtener amigos (aceptados)
+router.get("/amigos/:id_usuario", verifyToken, obtenerAmigos);
+
+// Enviar solicitud
+router.post("/amistad/enviar", verifyToken, enviarSolicitudAmistad);
+
+// Responder solicitud (aceptar/rechazar)
+router.post("/amistad/responder", verifyToken, responderSolicitudAmistad);
+
+// Obtener solicitudes recibidas
+router.get("/amistad/solicitudes/:id_usuario", verifyToken, obtenerSolicitudesAmistad);
 export default router;
