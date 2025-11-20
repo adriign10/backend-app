@@ -127,17 +127,17 @@ export const responderSolicitudAmistad = async (req, res) => {
 // Obtener amigos (aceptados)
 export const obtenerAmigos = async (req, res) => {
   try {
-    const id_usuario = req.user.id_usuario;
+    const { id_usuario } = req.params;
 
-    const [amigos] = await db.query(
+    const [rows] = await db.query(
       `SELECT u.id_usuario, u.nombre, u.email, u.foto_perfil
        FROM amistades a
        JOIN usuarios u ON u.id_usuario = a.id_amigo
-       WHERE a.id_usuario=? AND a.estado='aceptado'`,
+       WHERE a.id_usuario = ? AND a.estado = 'aceptado'`,
       [id_usuario]
     );
 
-    res.json(amigos);
+    res.json(rows);
 
   } catch (error) {
     console.error(error);
@@ -145,32 +145,32 @@ export const obtenerAmigos = async (req, res) => {
   }
 };
 
+
 // Buscar usuarios para agregar como amigos
 export const buscarUsuarios = async (req, res) => {
   try {
-    const { term } = req.query;
-    const id_usuario = req.user.id_usuario; // desde token JWT
+    const { term, id_usuario } = req.query;
     const busqueda = `%${term}%`;
 
     const [rows] = await db.query(
-      `SELECT id_usuario, nombre, email, foto_perfil
-       FROM usuarios
-       WHERE (nombre LIKE ? OR email LIKE ?)
-         AND id_usuario != ?  -- no mostrarse a sí mismo
-         AND id_usuario NOT IN (
-           SELECT id_amigo 
-           FROM amistades 
-           WHERE id_usuario = ? AND estado='aceptado'
-         )`,
-      [busqueda, busqueda, id_usuario, id_usuario]
+      `SELECT u.id_usuario, u.nombre, u.email, u.foto_perfil,
+              IFNULL(a.estado, '') AS estado
+       FROM usuarios u
+       LEFT JOIN amistades a 
+         ON (a.id_usuario = ? AND a.id_amigo = u.id_usuario)
+       WHERE (u.nombre LIKE ? OR u.email LIKE ?)
+         AND u.id_usuario != ?`,
+      [id_usuario, busqueda, busqueda, id_usuario]
     );
 
     res.json(rows);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error buscando usuarios", error });
   }
 };
+
 
 // Obtener solicitudes recibidas
 export const obtenerSolicitudesAmistad = async (req, res) => {
