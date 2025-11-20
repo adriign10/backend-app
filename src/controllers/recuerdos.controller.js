@@ -35,24 +35,31 @@ export const createRecuerdo = async (req, res) => {
 
 export const getRecuerdosUsuario = async (req, res) => {
   try {
-    const { creado_por } = req.query;
+    const creado_por = req.query.creado_por;
+    console.log("Query params:", req.query);
 
     if (!creado_por) {
-      return res.status(400).json({ message: "Falta el parámetro creado_por" });
+      return res.status(400).json({ message: "Falta id de usuario" });
     }
 
-    const [recuerdos] = await db.query(
-      "SELECT * FROM recuerdos WHERE creado_por = ? ORDER BY fecha DESC",
+    const [rows] = await db.query(
+      `SELECT id_recuerdo, titulo, nota, fecha_evento, id_ubicacion, foto_representativa, creado_por, privacidad, fecha_creacion
+       FROM recuerdos
+       WHERE creado_por = ?
+       ORDER BY fecha_evento DESC`,
       [creado_por]
     );
 
-    res.json(recuerdos);
-    
+    console.log("Recuerdos encontrados:", rows);
+
+    res.json(rows);
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error en getRecuerdosUsuario:", error);
     res.status(500).json({ message: "Error al obtener recuerdos", error });
   }
 };
+
+
 export const updateRecuerdo = async (req, res) => {
   try {
     const { id_recuerdo } = req.params;
