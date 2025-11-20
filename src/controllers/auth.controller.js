@@ -124,40 +124,38 @@ export const profile = async (req, res) => {
 ///GOOGLE
 export const googleLogin = async (req, res) => {
   try {
-    const { token } = req.body; // token enviado desde frontend
+    const { token } = req.body; // token = response.credential desde frontend
+    console.log("BODY recibido:", req.body);
 
-    if (!token) {
-      return res.status(400).json({ message: "Token no recibido" });
-    }
+    if (!token) return res.status(400).json({ message: "Token no recibido" });
 
-    // 1️⃣ Verificar ID token con Google
+    // Verificar el ID token
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID
     });
 
     const payload = ticket.getPayload();
-
     const email = payload.email;
     const nombre = payload.name;
 
-    // 2️⃣ Buscar usuario en BD
+    // Buscar usuario
     let usuario = await Usuario.findByEmail(email);
 
-    // 3️⃣ Si no existe, crear usuario nuevo
+    // Si no existe, crear nuevo
     if (!usuario) {
       const id = await Usuario.create({
         nombre,
         email,
-        contrasena: null, // no tiene contraseña
-        foto_perfil: null, // se puede actualizar luego
+        contrasena: null,
+        foto_perfil: null,
         estado: 1,
         google: 1
       });
       usuario = await Usuario.findById(id);
     }
 
-    // 4️⃣ Crear JWT
+    // Crear JWT
     const tokenJwt = jwt.sign(
       { id_usuario: usuario.id_usuario },
       process.env.JWT_SECRET,
@@ -172,9 +170,6 @@ export const googleLogin = async (req, res) => {
 
   } catch (error) {
     console.error("Error Google Login:", error);
-    res.status(400).json({
-      message: "Error con Google Login",
-      error: error.message
-    });
+    res.status(400).json({ message: "Error con Google Login", error: error.message });
   }
 };
