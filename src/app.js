@@ -11,9 +11,9 @@ import notificacionesRoutes from './routes/notificaciones.routes.js';
 
 const app = express();
 
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Aumenta el límite de 10MB
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // CORS
 app.use(cors({
