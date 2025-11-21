@@ -253,37 +253,48 @@ export const getRecuerdosVisibles = async (req, res) => {
 
 export const buscarRecuerdosAvanzado = async (req, res) => {
   try {
-    const { id_usuario, termino } = req.query;
+    const { id_usuario, termino, fecha_evento } = req.query;
 
-    if (!id_usuario) return res.status(400).json({ message: "Falta id_usuario" });
-    if (!termino) return res.json([]); // no hay término, devuelve vacío
+    if (!id_usuario)
+      return res.status(400).json({ message: "Falta id_usuario" });
 
-    const busqueda = `%${termino}%`;
+    const busqueda = `%${termino || ''}%`;
+
+    let fechaFiltro = '';
+
+    if (fecha_evento) {
+      fechaFiltro = `
+        AND DATE(r.fecha_evento) = DATE('${fecha_evento}')
+      `;
+    }
 
     const [rows] = await db.query(
-      `SELECT DISTINCT r.id_recuerdo, r.titulo, r.nota, r.fecha_evento, r.foto_representativa,
-              u.email AS email_creador,
-              ub.nombre AS ubicacion_nombre
-       FROM recuerdos r
-       LEFT JOIN usuarios u ON u.id_usuario = r.creado_por
-       LEFT JOIN ubicaciones ub ON r.id_ubicacion = ub.id_ubicacion
-       LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
-       LEFT JOIN usuarios um ON rm.id_usuario = um.id_usuario
-       WHERE r.creado_por = ?
-         AND (
-           r.titulo LIKE ?
-           OR r.nota LIKE ?
-           OR ub.nombre LIKE ?
-           OR um.email LIKE ?
-         )
-       ORDER BY r.fecha_evento DESC`,
-      [id_usuario, busqueda, busqueda, busqueda, busqueda]
+      `SELECT DISTINCT
+          r.id_recuerdo, r.titulo, r.nota, r.fecha_evento,
+          r.foto_representativa,
+          u.email AS email_creador,
+          ub.nombre AS ubicacion_nombre
+        FROM recuerdos r
+        LEFT JOIN usuarios u ON u.id_usuario = r.creado_por
+        LEFT JOIN ubicaciones ub ON ub.id_ubicacion = r.id_ubicacion
+        LEFT JOIN recuerdos_menciones rm ON rm.id_recuerdo = r.id_recuerdo
+        LEFT JOIN usuarios um ON um.id_usuario = rm.id_usuario
+        WHERE r.creado_por = ?
+        AND (
+          r.titulo LIKE ?
+          OR r.nota LIKE ?
+          OR ub.nombre LIKE ?
+          OR um.email LIKE ?
+        )
+        ${fechaFiltro}
+        ORDER BY r.fecha_evento DESC`,
+      [ id_usuario, busqueda, busqueda, busqueda, busqueda ]
     );
 
     res.json(rows);
 
   } catch (error) {
-    console.error("❌ Error buscarRecuerdosAvanzado:", error);
+    console.error("❌ Error en buscarRecuerdosAvanzado:", error);
     res.status(500).json({ message: "Error buscando recuerdos", error });
   }
 };
