@@ -201,3 +201,23 @@ export const obtenerSolicitudesAmistad = async (req, res) => {
     res.status(500).json({ message: "Error obteniendo solicitudes", error });
   }
 };
+
+// controllers/usuarios.controller.js
+export const eliminarAmigo = async (req, res) => {
+  try {
+    const id_usuario = req.user.id_usuario; // quien elimina
+    const { id_amigo } = req.body;
+
+    await db.query(
+      `DELETE FROM amistades 
+       WHERE (id_usuario = ? AND id_amigo = ?) 
+          OR (id_usuario = ? AND id_amigo = ?)`,
+      [id_usuario, id_amigo, id_amigo, id_usuario]
+    );
+
+    res.json({ message: "Amigo eliminado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error eliminando amigo", error });
+  }
+};
