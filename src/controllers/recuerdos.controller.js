@@ -263,10 +263,11 @@ export const buscarRecuerdosAvanzado = async (req, res) => {
     let fechaFiltro = '';
 
     if (fecha_evento) {
-      fechaFiltro = `
-        AND DATE(r.fecha_evento) = DATE('${fecha_evento}')
-      `;
-    }
+  fechaFiltro = `
+    AND r.fecha_evento >= '${fecha_evento} 00:00:00'
+    AND r.fecha_evento <= '${fecha_evento} 23:59:59'
+  `;
+}
 
     const [rows] = await db.query(
       `SELECT DISTINCT
