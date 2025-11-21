@@ -75,14 +75,24 @@ export const enviarSolicitudAmistad = async (req, res) => {
     }
 
     // Verificar si ya existe solicitud
-    const [exist] = await db.query(
-      `SELECT * FROM amistades WHERE id_usuario=? AND id_amigo=?`,
-      [id_usuario, id_amigo]
-    );
+const [exist] = await db.query(
+  `SELECT * FROM amistades WHERE id_usuario=? AND id_amigo=?`,
+  [id_usuario, id_amigo]
+);
 
-    if (exist.length > 0) {
-      return res.status(400).json({ message: "Solicitud ya enviada o amistad existente" });
-    }
+// Si existe una solicitud pendiente o aceptada → NO permitir reenviar
+if (exist.length > 0 && exist[0].estado !== 'rechazado') {
+  return res.status(400).json({ message: "Solicitud ya enviada o amistad existente" });
+}
+
+// Si está rechazada → permitir reenviar eliminando la anterior
+if (exist.length > 0 && exist[0].estado === 'rechazado') {
+  await db.query(
+    `DELETE FROM amistades WHERE id_usuario=? AND id_amigo=?`,
+    [id_usuario, id_amigo]
+  );
+}
+
 
     // Insertar solicitud pendiente
     await db.query(
