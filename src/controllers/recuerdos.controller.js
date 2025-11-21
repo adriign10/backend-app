@@ -253,54 +253,32 @@ export const getRecuerdosVisibles = async (req, res) => {
 
 export const buscarRecuerdosAvanzado = async (req, res) => {
   try {
-    const { id_usuario, titulo, nota, id_ubicacion, fecha_inicio, fecha_fin, id_amigo } = req.query;
+    const { id_usuario, termino } = req.query;
 
     if (!id_usuario) return res.status(400).json({ message: "Falta id_usuario" });
+    if (!termino) return res.json([]); // no hay término, devuelve vacío
 
-    let query = `
-      SELECT DISTINCT r.id_recuerdo, r.titulo, r.nota, r.fecha_evento, r.foto_representativa,
-             u.email AS email_creador
-      FROM recuerdos r
-      LEFT JOIN usuarios u ON u.id_usuario = r.creado_por
-      LEFT JOIN recuerdos_amigos ra ON r.id_recuerdo = ra.id_recuerdo
-      LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
-      WHERE r.creado_por = ?  -- solo recuerdos del usuario logueado
-    `;
-    const params = [id_usuario];
+    const busqueda = `%${termino}%`;
 
-    if (titulo) {
-      query += ` AND r.titulo LIKE ?`;
-      params.push(`%${titulo}%`);
-    }
-
-    if (nota) {
-      query += ` AND r.nota LIKE ?`;
-      params.push(`%${nota}%`);
-    }
-
-    if (id_ubicacion) {
-      query += ` AND r.id_ubicacion = ?`;
-      params.push(id_ubicacion);
-    }
-
-    if (fecha_inicio) {
-      query += ` AND r.fecha_evento >= ?`;
-      params.push(fecha_inicio);
-    }
-
-    if (fecha_fin) {
-      query += ` AND r.fecha_evento <= ?`;
-      params.push(fecha_fin);
-    }
-
-    if (id_amigo) {
-      query += ` AND (ra.id_usuario = ? OR rm.id_usuario = ?)`; // si quieres filtrar por amigo mencionado
-      params.push(id_amigo, id_amigo);
-    }
-
-    query += ` ORDER BY r.fecha_evento DESC`;
-
-    const [rows] = await db.query(query, params);
+    const [rows] = await db.query(
+      `SELECT DISTINCT r.id_recuerdo, r.titulo, r.nota, r.fecha_evento, r.foto_representativa,
+              u.email AS email_creador,
+              ub.nombre AS ubicacion_nombre
+       FROM recuerdos r
+       LEFT JOIN usuarios u ON u.id_usuario = r.creado_por
+       LEFT JOIN ubicaciones ub ON r.id_ubicacion = ub.id_ubicacion
+       LEFT JOIN recuerdos_menciones rm ON r.id_recuerdo = rm.id_recuerdo
+       LEFT JOIN usuarios um ON rm.id_usuario = um.id_usuario
+       WHERE r.creado_por = ?
+         AND (
+           r.titulo LIKE ?
+           OR r.nota LIKE ?
+           OR ub.nombre LIKE ?
+           OR um.email LIKE ?
+         )
+       ORDER BY r.fecha_evento DESC`,
+      [id_usuario, busqueda, busqueda, busqueda, busqueda]
+    );
 
     res.json(rows);
 
